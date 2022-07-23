@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 """
 Reads Darknet config and weights and creates Keras model with TF backend.
 

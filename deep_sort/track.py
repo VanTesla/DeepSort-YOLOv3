@@ -17,6 +17,7 @@ class TrackState:
 
 
 class Track:
+    # 一个轨迹的信息，包含(x,y,a,h) & v
     """
     A single target track with state space `(x, y, a, h)` and associated
     velocities, where `(x, y)` is the center of the bounding box, `a` is the
@@ -63,22 +64,28 @@ class Track:
 
     """
 
-    def __init__(self, mean, covariance, track_id, n_init, max_age,
+    def __init__(self, mean, covariance, track_id, n_init, max_age, # max age是一个存活期限，默认为70帧
                  feature=None):
         self.mean = mean
         self.covariance = covariance
         self.track_id = track_id
         self.hits = 1
+        # hits和n_init进行比较
+        # hits每次update的时候进行一次更新（只有match的时候才进行update）
+        # hits代表匹配上了多少次，匹配次数超过n_init就会设置为confirmed状态
         self.age = 1
         self.time_since_update = 0
+        # 每次调用predict函数的时候就会+1
+        # 每次调用update函数的时候就会设置为0
 
         self.state = TrackState.Tentative
         self.features = []
+        # 每个track对应多个features, 每次更新都将最新的feature添加到列表中
         if feature is not None:
             self.features.append(feature)
 
-        self._n_init = n_init
-        self._max_age = max_age
+        self._n_init = n_init # 如果连续n_init帧都没有出现失配，设置为deleted状态
+        self._max_age = max_age # 上限设置
 
     def to_tlwh(self):
         """Get current position in bounding box format `(top left x, top left y,

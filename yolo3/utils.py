@@ -16,12 +16,14 @@ def compose(*funcs):
         raise ValueError('Composition of empty sequence not supported.')
 
 def letterbox_image(image, size):
+    # 这里面用到的方法是给图片加上灰色边框，保证原图纵横比不变
+    # 灰色：RGB=BGR
     '''resize image with unchanged aspect ratio using padding'''
     image_w, image_h = image.size
     w, h = size
     new_w = int(image_w * min(w*1.0/image_w, h*1.0/image_h))
     new_h = int(image_h * min(w*1.0/image_w, h*1.0/image_h))
-    resized_image = image.resize((new_w,new_h), Image.BICUBIC)
+    resized_image = image.resize((new_w,new_h), Image.BICUBIC) # 双立方插值
 
     boxed_image = Image.new('RGB', size, (128,128,128))
     boxed_image.paste(resized_image, ((w-new_w)//2,(h-new_h)//2))

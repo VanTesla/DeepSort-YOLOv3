@@ -44,8 +44,10 @@ def min_cost_matching(
         * A list of unmatched detection indices.
 
     """
+    
     if track_indices is None:
         track_indices = np.arange(len(tracks))
+
     if detection_indices is None:
         detection_indices = np.arange(len(detections))
 
@@ -54,10 +56,23 @@ def min_cost_matching(
 
     cost_matrix = distance_metric(
         tracks, detections, track_indices, detection_indices)
+    # -----------------------------------------
+    # gated_distance中设置距离中最高上限，
+    # 这里最远距离实际是在deep sort类中的max_dist参数设置的
+    # 默认max_dist=0.2， 距离越小越好
+    # -----------------------------------------
+    # iou_cost情况下，max_distance的设置对应tracker中的max_iou_distance,
+    # 默认值为max_iou_distance=0.7
+    # 注意结果是1-iou，所以越小越好
+    # -----------------------------------------
     cost_matrix[cost_matrix > max_distance] = max_distance + 1e-5
+
+    # 匈牙利算法（或者KM算法）
     indices = linear_assignment(cost_matrix)
 
     matches, unmatched_tracks, unmatched_detections = [], [], []
+
+    # 这几个for循环用于对匹配结果进行筛选，得到匹配和未匹配的结果
     for col, detection_idx in enumerate(detection_indices):
         if col not in indices[:, 1]:
             unmatched_detections.append(detection_idx)
@@ -72,9 +87,11 @@ def min_cost_matching(
             unmatched_detections.append(detection_idx)
         else:
             matches.append((track_idx, detection_idx))
+    # 得到匹配，未匹配轨迹，未匹配检测
     return matches, unmatched_tracks, unmatched_detections
 
 
+# 级联匹配函数
 def matching_cascade(
         distance_metric, max_distance, cascade_depth, tracks, detections,
         track_indices=None, detection_indices=None):
@@ -114,13 +131,18 @@ def matching_cascade(
         * A list of unmatched detection indices.
 
     """
+
+    # 分配track_indices和detection_indices
     if track_indices is None:
         track_indices = list(range(len(tracks)))
+
     if detection_indices is None:
         detection_indices = list(range(len(detections)))
 
     unmatched_detections = detection_indices
+
     matches = []
+    # cascade depth = max age 默认为70
     for level in range(cascade_depth):
         if len(unmatched_detections) == 0:  # No detections left
             break
@@ -131,11 +153,11 @@ def matching_cascade(
         ]
         if len(track_indices_l) == 0:  # Nothing to match at this level
             continue
-
+        # 级联匹配核心内容就是这个函数
         matches_l, _, unmatched_detections = \
             min_cost_matching(
                 distance_metric, max_distance, tracks, detections,
-                track_indices_l, unmatched_detections)
+                track_indices_l, unmatched_detections) # 这个函数可以接收不同的distance_metric，在级联匹配和iou匹配中都有用到
         matches += matches_l
     unmatched_tracks = list(set(track_indices) - set(k for k, _ in matches))
     return matches, unmatched_tracks, unmatched_detections
@@ -144,6 +166,7 @@ def matching_cascade(
 def gate_cost_matrix(
         kf, cost_matrix, tracks, detections, track_indices, detection_indices,
         gated_cost=INFTY_COST, only_position=False):
+    # 根据通过卡尔曼滤波获得的状态分布，使成本矩阵中的不可行条目无效。
     """Invalidate infeasible entries in cost matrix based on the state
     distributions obtained by Kalman filtering.
 

@@ -37,13 +37,13 @@ COLORS = np.random.randint(0, 255, size=(200, 3),
 def main(yolo):
 
     start = time.time()
-    #Definition of the parameters
-    max_cosine_distance = 0.5 #余弦距离的控制阈值
+    # 参数定义
+    max_cosine_distance = 0.5 # 余弦距离的控制阈值
     nn_budget = None
-    nms_max_overlap = 0.3 #非极大抑制的阈值
+    nms_max_overlap = 0.3 # 非极大抑制的阈值
 
     counter = []
-    #deep_sort
+    # deep_sort
     model_filename = 'model_data/market1501.pb'
     encoder = gdet.create_box_encoder(model_filename,batch_size=1)
 
@@ -51,11 +51,11 @@ def main(yolo):
     tracker = Tracker(metric)
 
     writeVideo_flag = True
-    #video_path = "./output/output.avi"
+    # video_path = "./output/output.avi"
     video_capture = cv2.VideoCapture(args["input"])
 
     if writeVideo_flag:
-    # Define the codec and create VideoWriter object
+    # 创建视频输出
         w = int(video_capture.get(3))
         h = int(video_capture.get(4))
         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
@@ -67,14 +67,14 @@ def main(yolo):
 
     while True:
 
-        ret, frame = video_capture.read()  # frame shape 640*480*3
-        if ret != True:
+        ret, frame = video_capture.read()  # frame的维度是640*480*3
+        if ret != True: # 表示检测到视频
             break
         t1 = time.time()
 
        # image = Image.fromarray(frame)
-        image = Image.fromarray(frame[...,::-1]) #bgr to rgb
-        boxs,class_names = yolo.detect_image(image)
+        image = Image.fromarray(frame[...,::-1]) # BGR转RGB
+        boxs, class_names = yolo.detect_image(image)
         features = encoder(frame,boxs)
         # score to 1.0 here).
         detections = [Detection(bbox, 1.0, feature) for bbox, feature in zip(boxs, features)]

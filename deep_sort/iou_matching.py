@@ -5,7 +5,8 @@ from . import linear_assignment
 
 
 def iou(bbox, candidates):
-    """Computer intersection over union.
+    """Computer inte
+    rsection over union.
 
     Parameters
     ----------
@@ -41,6 +42,7 @@ def iou(bbox, candidates):
 
 def iou_cost(tracks, detections, track_indices=None,
              detection_indices=None):
+    # 计算track和detection之间的iou距离矩阵
     """An intersection over union distance metric.
 
     Parameters
@@ -64,6 +66,7 @@ def iou_cost(tracks, detections, track_indices=None,
         `1 - iou(tracks[track_indices[i]], detections[detection_indices[j]])`.
 
     """
+
     if track_indices is None:
         track_indices = np.arange(len(tracks))
     if detection_indices is None:

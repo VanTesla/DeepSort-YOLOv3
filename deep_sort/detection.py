@@ -23,7 +23,6 @@ class Detection(object):
         Detector confidence score.
     feature : ndarray | NoneType
         A feature vector that describes the object contained in this image.
-
     """
 
     def __init__(self, tlwh, confidence, feature):
@@ -47,3 +46,11 @@ class Detection(object):
         ret[:2] += ret[2:] / 2
         ret[2] /= ret[3]
         return ret
+'''
+Detection类用于保存通过目标检测器得到的一个检测框，包含top left坐标+框的宽和高
+以及该bbox的置信度还有通过reid获取得到的对应的embedding。
+
+tlwh: 代表左上角坐标+宽高
+tlbr: 代表左上角坐标+右下角坐标
+xyah: 代表中心坐标+宽高比+高
+'''

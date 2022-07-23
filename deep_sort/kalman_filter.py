@@ -1,4 +1,3 @@
-# vim: expandtab:ts=4:sw=4
 import numpy as np
 import scipy.linalg
 
@@ -86,6 +85,8 @@ class KalmanFilter(object):
         return mean, covariance
 
     def predict(self, mean, covariance):
+        # 相当于得到t时刻估计值
+        # Q 预测过程中噪声协方差
         """Run Kalman filter prediction step.
 
         Parameters
@@ -114,15 +115,21 @@ class KalmanFilter(object):
             self._std_weight_velocity * mean[3],
             1e-5,
             self._std_weight_velocity * mean[3]]
+        # np.r_ 按列连接两个矩阵
+        # 初始化噪声矩阵Q
         motion_cov = np.diag(np.square(np.r_[std_pos, std_vel]))
 
+        # x' = Fx
         mean = np.dot(self._motion_mat, mean)
+
+        # P' = FPF^T+Q
         covariance = np.linalg.multi_dot((
             self._motion_mat, covariance, self._motion_mat.T)) + motion_cov
 
         return mean, covariance
 
     def project(self, mean, covariance):
+        # R 测量过程中噪声的协方差
         """Project state distribution to measurement space.
 
         Parameters
@@ -139,19 +146,26 @@ class KalmanFilter(object):
             estimate.
 
         """
+        
         std = [
             self._std_weight_position * mean[3],
             self._std_weight_position * mean[3],
             1e-1,
             self._std_weight_position * mean[3]]
+
+        # 初始化噪声矩阵R
         innovation_cov = np.diag(np.square(std))
 
+        # 将均值向量映射到检测空间，即Hx'
         mean = np.dot(self._update_mat, mean)
+
+        # 将协方差矩阵映射到检测空间，即HP'H^T
         covariance = np.linalg.multi_dot((
             self._update_mat, covariance, self._update_mat.T))
         return mean, covariance + innovation_cov
 
     def update(self, mean, covariance, measurement):
+        # 通过估计值和观测值估计最新结果
         """Run Kalman filter correction step.
 
         Parameters
@@ -171,16 +185,26 @@ class KalmanFilter(object):
             Returns the measurement-corrected state distribution.
 
         """
+        # 通过估计值和观测值估计最新结果
+        # 将均值和协方差映射到检测空间，得到 Hx' 和 S
         projected_mean, projected_cov = self.project(mean, covariance)
 
+        # 矩阵分解
         chol_factor, lower = scipy.linalg.cho_factor(
             projected_cov, lower=True, check_finite=False)
+
+        # 计算卡尔曼增益K
         kalman_gain = scipy.linalg.cho_solve(
             (chol_factor, lower), np.dot(covariance, self._update_mat.T).T,
             check_finite=False).T
+
+        # z - Hx'
         innovation = measurement - projected_mean
 
+        # x = x' + Ky
         new_mean = mean + np.dot(innovation, kalman_gain.T)
+
+        # P = (I - KH)P'
         new_covariance = covariance - np.linalg.multi_dot((
             kalman_gain, projected_cov, kalman_gain.T))
         return new_mean, new_covariance
